@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>前途查询系统</title>
+<style>
+  :root{
+    --primary-50:#eef4ff; --primary-100:#d9e6ff; --primary-200:#bcd2ff;
+    --primary-300:#8eb6ff; --primary-400:#5991fd; --primary-500:#3b6ef5;
+    --primary-600:#2550ea; --primary-700:#1d3dd8;
+    --gray-50:#f8fafc; --gray-100:#f1f5f9; --gray-200:#e2e8f0; --gray-300:#cbd5e1;
+    --gray-400:#94a3b8; --gray-500:#64748b; --gray-600:#475569; --gray-700:#334155;
+    --gray-800:#1e293b; --gray-900:#0f172a;
+    --success-50:#f0fdf4; --success-500:#22c55e; --success-600:#16a34a;
+    --warning-50:#fffbeb; --warning-500:#f59e0b;
+    --error-50:#fef2f2; --error-500:#ef4444; --error-600:#dc2626;
+    --shadow-sm:0 1px 2px 0 rgb(15 23 42 / .05);
+    --shadow-md:0 4px 6px -1px rgb(15 23 42 / .08), 0 2px 4px -2px rgb(15 23 42 / .04);
+    --shadow-lg:0 10px 15px -3px rgb(15 23 42 / .1), 0 4px 6px -4px rgb(15 23 42 / .06);
+    --shadow-xl:0 20px 25px -5px rgb(15 23 42 / .1), 0 8px 10px -6px rgb(15 23 42 / .04);
+    --radius-sm:6px; --radius-md:10px; --radius-lg:16px; --radius-xl:24px;
+    --transition-fast:150ms ease; --transition-normal:250ms ease;
+  }
+  *{margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html{font-size:16px;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(135deg,#7c8bd4 0%,#5a6ab8 50%,#46549a 100%);
+    background-attachment:fixed;
+    min-height:100vh; color:var(--gray-800); line-height:1.5;
+    display:flex; flex-direction:column; -webkit-font-smoothing:antialiased;
+  }
+  .bg-decoration{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;}
+  .bg-decoration::before,.bg-decoration::after{content:''; position:absolute; border-radius:50%; filter:blur(80px); opacity:.35;}
+  .bg-decoration::before{width:400px; height:400px; background:#a5b4fc; top:-100px; right:-120px;}
+  .bg-decoration::after{width:360px; height:360px; background:#818cf8; bottom:-80px; left:-100px;}
+
+  .app{position:relative; z-index:1; flex:1; display:flex; flex-direction:column; width:100%;}
+  .app-header{padding:16px 20px; display:flex; align-items:center; justify-content:space-between; color:#fff;}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.125rem; letter-spacing:-.02em;}
+  .brand-icon{width:32px; height:32px; background:#fff; border-radius:8px; display:flex; align-items:center;
+    justify-content:center; color:var(--primary-600); font-size:1rem; font-weight:800;}
+  .header-actions{display:flex; align-items:center; gap:10px;}
+  .header-user{display:flex; flex-direction:column; align-items:flex-end; line-height:1.2;}
+  .header-name{font-size:.875rem; font-weight:600;}
+  .role-tag{font-size:11px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.22); color:#fff;}
+  .user-avatar{width:34px; height:34px; border-radius:50%; background:#fff; color:var(--primary-600);
+    display:flex; align-items:center; justify-content:center; font-weight:600; font-size:.875rem;
+    border:2px solid rgb(255 255 255 / .4); flex-shrink:0;}
+  .header-logout{border:1px solid rgba(255,255,255,.5); background:transparent; color:#fff; height:34px;
+    padding:0 12px; border-radius:10px; font-size:13px; cursor:pointer; white-space:nowrap;}
+
+  .screen{display:none; flex:1; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px; animation:fadeIn .3s ease;}
+  .screen.active{display:flex;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+  .card{background:#fff; border-radius:var(--radius-xl); box-shadow:var(--shadow-xl); width:100%; max-width:440px; padding:32px 28px;}
+  .card--wide{max-width:720px;}
+  .login-margin{margin-top:6vh;}
+  .card-header{margin-bottom:24px;}
+  .card-title{font-size:1.5rem; font-weight:700; color:var(--gray-900); letter-spacing:-.02em; margin-bottom:6px;}
+  .card-title--center{text-align:center;}
+  .card-subtitle{font-size:.9375rem; color:var(--gray-500);}
+
+  .form-group{margin-bottom:18px;}
+  .form-label{display:block; font-size:.875rem; font-weight:500; color:var(--gray-700); margin-bottom:7px;}
+  .form-label .required{color:var(--error-500); margin-right:3px;}
+  .form-input,.form-select{width:100%; padding:12px 14px; font-size:.9375rem; color:var(--gray-800);
+    background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius-md);
+    transition:all var(--transition-fast); outline:none; font-family:inherit;}
+  .form-input::placeholder,.form-select::placeholder{color:var(--gray-400);}
+  .form-input:hover,.form-select:hover{border-color:var(--gray-300);}
+  .form-input:focus,.form-select:focus{border-color:var(--primary-400); box-shadow:0 0 0 3px var(--primary-100);}
+  .form-input.has-error{border-color:var(--error-500); box-shadow:0 0 0 3px var(--error-50);}
+  .error-msg{display:none; font-size:.8125rem; color:var(--error-600); margin-top:6px;}
+  .error-msg.visible{display:block;}
+  .hint-box{background:var(--primary-50); border:1px solid var(--primary-100); border-radius:var(--radius-md);
+    padding:12px 14px; margin-top:20px; font-size:.8125rem; color:var(--gray-600); line-height:1.7;}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 20px;
+    font-size:.9375rem; font-weight:600; border:none; border-radius:var(--radius-md); cursor:pointer;
+    transition:all var(--transition-fast); text-decoration:none; font-family:inherit; outline:none;}
+  .btn--primary{background:linear-gradient(135deg,var(--primary-500),var(--primary-600)); color:#fff; width:100%;
+    box-shadow:0 4px 12px rgb(59 110 245 / .25);}
+  .btn--primary:hover{background:linear-gradient(135deg,var(--primary-600),var(--primary-700)); transform:translateY(-1px);
+    box-shadow:0 6px 16px rgb(59 110 245 / .32);}
+  .btn--primary:active{transform:translateY(0);}
+  .btn--secondary{background:var(--gray-100); color:var(--gray-700);}
+  .btn--secondary:hover{background:var(--gray-200);}
+  .btn--outline{background:transparent; color:var(--primary-600); border:1px solid var(--primary-200);}
+  .btn--outline:hover{background:var(--primary-50);}
+  .btn--sm{padding:8px 14px; font-size:.8125rem;}
+  .btn:disabled{opacity:.6; cursor:not-allowed; transform:none !important;}
+
+  .toolbar{display:flex; gap:10px; margin-bottom:20px;}
+  .toolbar .btn{flex:1;}
+
+  .chips{display:flex; gap:8px; overflow-x:auto; padding:4px 2px 10px; margin-bottom:4px; -webkit-overflow-scrolling:touch;}
+  .chip{flex:0 0 auto; padding:8px 14px; border-radius:999px; background:var(--primary-50); color:#3a4a7a;
+    font-size:13px; border:1px solid var(--primary-100); cursor:pointer; white-space:nowrap; transition:all var(--transition-fast);}
+  .chip.on{background:var(--primary-500); color:#fff; border-color:var(--primary-500);}
+
+  .row2{display:flex; gap:10px; margin:6px 0 16px;}
+  .row2 .form-select{flex:1; height:46px; padding:0 12px;}
+
+  .results-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .results-title{font-size:1rem; font-weight:600; color:var(--gray-800);}
+  .results-count{font-size:.8125rem; color:var(--gray-500);}
+
+  .table-wrap{overflow-x:auto; border:1px solid var(--gray-100); border-radius:var(--radius-lg);}
+  table{width:100%; border-collapse:collapse; font-size:13px; min-width:640px;}
+  thead th{background:#f3f6ff; color:#3a4a7a; text-align:left; padding:10px 10px; font-weight:700;
+    border-bottom:1px solid var(--gray-200); white-space:nowrap; position:sticky; top:0;}
+  tbody td{padding:10px; border-bottom:1px solid #f0f2f8; vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--gray-50);}
+  .cust{font-weight:600; color:var(--gray-800);}
+  .grp{display:inline-block; font-size:11px; padding:2px 7px; border-radius:6px; background:var(--primary-50); color:#3a4a7a;}
+  .price{font-weight:700; color:var(--success-600); white-space:nowrap;}
+  .price.empty{color:var(--gray-400); font-weight:500;}
+  .op{white-space:nowrap;}
+  .op button{border:1px solid var(--primary-300); color:var(--primary-600); background:#fff; border-radius:8px;
+    padding:5px 10px; font-size:12px; cursor:pointer; transition:all var(--transition-fast);}
+  .op button:hover{background:var(--primary-50);}
+
+  .empty-state{text-align:center; color:var(--gray-400); padding:40px 20px;}
+  .empty-state__icon{font-size:2.5rem; margin-bottom:12px; opacity:.6;}
+  .empty-state__text{font-size:.9375rem;}
+
+  .footer-note{color:rgba(255,255,255,.75); font-size:11px; line-height:1.6; margin-top:18px; padding:0 4px;}
+
+  #toast{position:fixed; left:50%; bottom:calc(30px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px);
+    background:rgba(20,26,40,.92); color:#fff; padding:11px 18px; border-radius:10px; font-size:14px; opacity:0;
+    pointer-events:none; transition:opacity .2s, transform .2s; z-index:99; max-width:86%; text-align:center;}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .hidden{display:none !important;}
+
+  @media (max-width:480px){
+    .card{padding:26px 22px; border-radius:var(--radius-lg);}
+    .card-title{font-size:1.375rem;}
+    .login-margin{margin-top:3vh;}
+    .app-header{padding:14px 16px;}
+  }
+  @media (min-width:768px){
+    .screen{justify-content:center; padding:32px 24px;}
+  }
+</style>
+</head>
+<body>
+<div class="bg-decoration"></div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">前</div>
+      <span>前途查询系统</span>
+    </div>
+    <div class="header-actions" id="headerActions"></div>
+  </header>
+
+  <!-- 登录屏 -->
+  <section class="screen active" id="loginScreen">
+    <div class="card login-margin">
+      <div class="card-header">
+        <h1 class="card-title">用户登录</h1>
+        <p class="card-subtitle">产品价格查询 · 权限隔离</p>
+      </div>
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label class="form-label"><span class="required">*</span>姓名</label>
+          <input type="text" class="form-input" placeholder="请输入姓名" id="loginName" list="userList" autocomplete="off" />
+          <datalist id="userList"></datalist>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="required">*</span>口令</label>
+          <input type="password" class="form-input" placeholder="请输入口令" id="loginPass" />
+          <div class="error-msg" id="loginErr"></div>
+        </div>
+        <div class="form-group" style="margin-top:22px; margin-bottom:0;">
+          <button type="submit" class="btn btn--primary">登 录</button>
+        </div>
+      </form>
+      <div class="hint-box">
+        初始账号（演示）：<br>
+        · 管理员 / admin888（可见全部）<br>
+        · 朱磊 / 董翀 / 赵大伟 · 口令 123456（各看分管客户）<br>
+        · 周嵘 · 口令 a7630107（待授权，暂无可查范围）
+      </div>
+    </div>
+  </section>
+
+  <!-- 查询屏 -->
+  <section class="screen" id="appScreen">
+    <div class="card card--wide">
+      <div class="card-header">
+        <h1 class="card-title card-title--center">前途查询系统</h1>
+        <p class="card-subtitle" id="curScope" style="text-align:center;"></p>
+      </div>
+
+      <div id="adminTools" class="toolbar hidden">
+        <button class="btn btn--secondary" id="exportBtn">导出价格 CSV</button>
+        <button class="btn btn--secondary" id="importBtn">导入价格 CSV</button>
+        <input type="file" id="importFile" accept=".csv,text/csv" class="hidden" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">搜索</label>
+        <input class="form-input" id="searchInput" placeholder="搜索 客户 / 产品名称 / 规格型号 / 物料组" />
+      </div>
+
+      <div class="chips" id="groupChips"></div>
+
+      <div class="row2">
+        <select class="form-select" id="customerSel"><option value="">全部客户</option></select>
+      </div>
+
+      <div class="results-header">
+        <h3 class="results-title">查询结果</h3>
+        <span class="results-count" id="countText"></span>
+      </div>
+
+      <div id="resultBody"></div>
+
+      <div class="footer-note">
+        说明：本文件为<strong>离线单机版</strong>，数据与权限均内置在文件中，便于携带、双击即用。权限为前端筛选（便于按分管范围查看），并非服务端强制隔离；
+        如需严格权限管控请使用服务端版本。单价默认内置为空，管理员可就地录入并导出/导入 CSV 在本地保存。
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ===== 内置数据（由生成脚本注入，无需联网/服务器）===== */
+const PRODUCTS = [{"customer":"安徽太平洋电缆股份有限公司","materialGroup":"硅烷交联","productName":"二步法硅烷交联绝缘料","spec":"101C","unit":"吨","price":null},{"customer":"浙江华普电缆有限公司","materialGroup":"硅烷交联","productName":"二步法硅烷交联绝缘料","spec":"101A","unit":"吨","price":null},{"customer":"标柔特种电缆（上海）有限公司","materialGroup":"低烟无卤","productName":"耐油型 125℃辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-5125 橙色RAL2003","unit":"吨","price":null},{"customer":"淮南文峰光电科技股份有限公司","materialGroup":"PE/阻燃PE","productName":"通讯电缆用高密度聚乙烯绝缘料","spec":"WMPE-4311H 本色","unit":"吨","price":null},{"customer":"上海埃因电线电缆有限公司","materialGroup":"化学交联","productName":"35KV化学交联绝缘料","spec":"YJ-35 本色","unit":"吨","price":null},{"customer":"连展（寮国）电子科技有限公司","materialGroup":"弹性体","productName":"TPU弹性体材料","spec":"WMU-1184F 本色","unit":"吨","price":null},{"customer":"太仓年益科技电子有限公司","materialGroup":"色母料","productName":"PE色母料","spec":"WMS-001 橙色","unit":"吨","price":null},{"customer":"安徽迎客松电缆集团有限公司","materialGroup":"PVC","productName":"105度护层级聚氯乙烯塑料","spec":"WMC-9051（83A）  黑色","unit":"吨","price":null},{"customer":"安徽长利电缆科技有限公司","materialGroup":"色母料","productName":"PE色母料","spec":"WMS-001 红色","unit":"吨","price":null},{"customer":"浙江华嘉达电缆集团有限公司","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 黄0021","unit":"吨","price":null},{"customer":"安徽省宁国禹安电工有限公司","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 白0021","unit":"吨","price":null},{"customer":"安徽诺普电缆有限公司","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 棕0021","unit":"吨","price":null},{"customer":"上海津纬电气系统有限公司","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 红0031","unit":"吨","price":null},{"customer":"台州市亚玛得电子股份有限公司","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 红0021","unit":"吨","price":null},{"customer":"国柔电缆（上海）有限公司","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 黑0021","unit":"吨","price":null},{"customer":"丁少明","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 灰0021","unit":"吨","price":null},{"customer":"深通光电(上海)有限公司","materialGroup":"PVC","productName":"105℃雾面护层级聚氯乙烯塑料","spec":"WMC-9051FV 黑色","unit":"吨","price":null},{"customer":"无为县众鑫电缆有限公司","materialGroup":"低烟无卤","productName":"B1级高阻燃105°C辐照交联低烟无卤聚烯烃电缆料","spec":"WM-7105T 本色","unit":"吨","price":null},{"customer":"江苏乔浦电线电缆有限公司","materialGroup":"PVC","productName":"美标105度PVC绝缘料","spec":"WMC-9052 绿0021","unit":"吨","price":null},{"customer":"名柔特种电缆（江苏）有限公司","materialGroup":"PVC","productName":"美标105度PVC绝缘料","spec":"WMC-9052 蓝0021","unit":"吨","price":null},{"customer":"安徽华能电缆集团有限公司","materialGroup":"低烟无卤","productName":"耐油型 125℃辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-5125 本色","unit":"吨","price":null},{"customer":"宁国市奥利达电器有限公司","materialGroup":"低烟无卤","productName":"高阻燃90℃低烟无卤聚烯烃护套料","spec":"WM-1906D 黑色","unit":"吨","price":null},{"customer":"泰安华利德贸易有限公司","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 本色","unit":"吨","price":null},{"customer":"安徽航天电缆集团有限公司","materialGroup":"PVC","productName":"90度高阻燃PVC护层级电缆料","spec":"WMC-1901Z1 黑色","unit":"吨","price":null},{"customer":"浙江钜典药业有限公司","materialGroup":"色母料","productName":"PE色母料","spec":"WMS-001 白色","unit":"吨","price":null},{"customer":"浙江飞亚电线电缆有限公司","materialGroup":"硅烷交联","productName":"硅烷交联聚乙烯绝缘料","spec":"101H","unit":"吨","price":null},{"customer":"浙江通策电缆有限公司","materialGroup":"PVC","productName":"105℃半硬质绝缘级聚氯乙烯塑料","spec":"WMC-9052S 蓝色","unit":"吨","price":null},{"customer":"上海朗达电缆(集团)有限公司","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃护套料","spec":"WM-1907 黑色","unit":"吨","price":null},{"customer":"上海耀闻电线电缆有限公司","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 本色0021","unit":"吨","price":null},{"customer":"上海藤新电缆有限公司","materialGroup":"硅烷交联","productName":"硅烷交联弹性体","spec":"101E","unit":"吨","price":null},{"customer":"上海浦东电线电缆（集团）有限公司","materialGroup":"屏蔽料","productName":"超高压电缆（海缆）用半导电聚烯烃料","spec":"BD-PE","unit":"吨","price":null},{"customer":"上海昭朔特种线缆有限公司","materialGroup":"屏蔽料","productName":"35kV及以下交联聚乙烯绝缘电缆绝缘用过氧化物交联型半导电屏蔽料(外屏)","spec":"PYJBJ-35 黑色","unit":"吨","price":null},{"customer":"安徽国电电缆股份有限公司","materialGroup":"屏蔽料","productName":"35kV及以下交联聚乙烯绝缘电缆导体用过氧化物交联型半导电屏蔽料（内屏）","spec":"PYJD-35 黑色","unit":"吨","price":null},{"customer":"易初特种电线电缆（昆山）有限公司","materialGroup":"屏蔽料","productName":"10kV及以下交联聚乙烯绝缘电缆绝缘用过氧化物交联型半导电屏蔽料(外屏)","spec":"PYJBJ-10 黑色","unit":"吨","price":null},{"customer":"安徽蒙特尔电缆集团有限公司","materialGroup":"屏蔽料","productName":"10kV及以下交联聚乙烯绝缘电缆导体用过氧化物交联型半导电屏蔽料（内屏）","spec":"PYJD-10 黑色","unit":"吨","price":null},{"customer":"安徽华宇电缆集团有限公司","materialGroup":"PE/阻燃PE","productName":"90℃中密度PE护套料","spec":"WMPE-1211M 黑色","unit":"吨","price":null},{"customer":"上海江洋线缆有限公司","materialGroup":"硅烷交联","productName":"二步法硅烷自然交联绝缘料","spec":"101K","unit":"吨","price":null},{"customer":"湖州织里新飞亚电线电缆厂","materialGroup":"硅烷交联","productName":"二步法硅烷交联架空绝缘料","spec":"201A","unit":"吨","price":null},{"customer":"安徽光生电缆有限公司","materialGroup":"屏蔽料","productName":"热塑性半导电屏蔽料","spec":"PSD","unit":"吨","price":null},{"customer":"南洋电缆集团泰州有限公司","materialGroup":"PVC","productName":"105℃半硬质绝缘级聚氯乙烯塑料","spec":"WMC-9052S 紫色","unit":"吨","price":null},{"customer":"上海电缆厂集团神通电线电缆有限公司","materialGroup":"PVC","productName":"105℃半硬质绝缘级聚氯乙烯塑料","spec":"WMC-9052S 棕色","unit":"吨","price":null},{"customer":"安徽阿克姆缆业有限公司","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 黑色BK01","unit":"吨","price":null},{"customer":"安徽光神航天电子技术有限公司","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 黄色YW01","unit":"吨","price":null},{"customer":"云帆（天津）设备安装有限公司","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 红色RD01","unit":"吨","price":null},{"customer":"河北朝阳线缆有限公司","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 绿色GN01","unit":"吨","price":null},{"customer":"上海利滨线缆有限公司","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 蓝色BU01","unit":"吨","price":null},{"customer":"黄山市金川电缆股份有限公司","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 灰色GY01","unit":"吨","price":null},{"customer":"上海飞航电线电缆有限公司","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 棕色BN01","unit":"吨","price":null},{"customer":"上海南洋电缆有限公司","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 橙色OR01","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 白色WH01","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105℃半硬质绝缘级聚氯乙烯塑料","spec":"WMC-9052S 红色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105℃半硬质绝缘级聚氯乙烯塑料","spec":"WMC-9052S 灰色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105℃半硬质绝缘级聚氯乙烯塑料","spec":"WMC-9052S 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105℃半硬质绝缘级聚氯乙烯塑料","spec":"WMC-9052S 黄色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105℃半硬质绝缘级聚氯乙烯塑料","spec":"WMC-9052S 橙色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"B1级高阻燃125°C辐照交联低烟无卤聚烯烃电缆料","spec":"WM-7125T 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"弹性体","productName":"TPU弹性体材料","spec":"WMU-1184F 灰色0325","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"二步法硅烷交联绝缘料","spec":"101B","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"II型90℃护层级软聚氯乙烯塑料","spec":"WMC-1901H 灰色RAL7001","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"超高压电缆用90℃绝缘级阻燃PVC护套料","spec":"WMC-1901GZ","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90°C低烟无卤阻燃聚烯烃护套料","spec":"WM-1902 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"弹性体","productName":"105度无卤阻燃热塑性弹性体电线料","spec":"WMX-2288H 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"75℃网线用CMR阻燃级聚氯乙烯护套料","spec":"WMC-2751RW 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"电力电缆","productName":"电力电缆","spec":"WDZB-YJY-4*10+1*6","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"耐油耐寒抗UV105度聚氯乙烯护套","spec":"WMC-9051OW 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105度护层级聚氯乙烯塑料","spec":"WMC-9051 铬0027","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105度护层级聚氯乙烯塑料","spec":"WMC-9051（77A）  黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105度护层级聚氯乙烯塑料","spec":"WMC-9051 黑0021","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70℃柔软护层级聚氯乙烯塑料 HR-70","spec":"WMC-1701P 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"抗紫外线阻燃70℃聚氯乙烯绝缘料","spec":"WMC-1702UZ 绿色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"超高压电缆用90℃绝缘级阻燃PVC护套料","spec":"WMC-1901GZ 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"90℃ 分支电缆用PVC注塑料","spec":"WMC-5903 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105度PVC绝缘料","spec":"WMC-9052 黑0041","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105度PVC绝缘料","spec":"WMC-9052 灰0041","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70℃丁腈PVC护套料","spec":"WMC-7701O 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 橙色0002","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105度阻燃耐寒护层级聚氯乙烯塑料","spec":"WMC-7051WZ 黑0071","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105度耐寒护层级聚氯乙烯塑料","spec":"WMC-6701W 黑0071","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"环保型70℃绝缘级软聚氯乙烯塑料 J-70","spec":"WMC-1702 黑色0081","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"环保型70℃绝缘级软聚氯乙烯塑料 J-70","spec":"WMC-1702 白色0081","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105°耐寒PVC护套料","spec":"WMC-9051W （75A）  黑0021","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"80度耐寒PVC护套料","spec":"WMC-9801W  灰0021（RAL7001)","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70℃护层级聚氯乙烯塑料 H-70","spec":"WMC-1701 黑色 1.43","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70℃柔软绝缘级聚氯乙烯塑料 JR-70","spec":"WMC-1702P 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70℃柔软绝缘级聚氯乙烯塑料 JR-70","spec":"WMC-1702P 白 WH0051","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70℃护层级聚氯乙烯塑料 H-70","spec":"WMC-1701 黑 90A","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"澳标90℃环保型无铅热塑性聚氯乙烯阻燃护套料 5V-90","spec":"WMC-1901V 黑色RAL9005 1.40","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70度雾面耐寒PVC护套料","spec":"WMC-2701VW 黑","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70℃柔软护层级聚氯乙烯塑料 HR-70","spec":"WMC-1701P 黄色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"澳标90℃环保型无铅热塑性聚氯乙烯阻燃护套料 5V-90","spec":"WMC-1901V 黑色RAL9005 1.44","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"耐油耐寒抗UV105度聚氯乙烯护套","spec":"WMC-9051OW 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"环保型70℃护层级聚氯⼄烯塑料","spec":"WMC-6701 ⿊⾊","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70°C耐油阻燃聚氯乙烯护套料","spec":"WMC-6701OZ 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"美标105度PVC绝缘料","spec":"WMC-9052 绿0022  潘通绿C","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"色母料","productName":"70°C阻燃B2级聚氯乙烯绝缘料","spec":"WMS-1702B2 黄色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"色母料","productName":"70°C阻燃B2级聚氯乙烯绝缘料","spec":"WMS-1702B2 红色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70°C阻燃B2级聚氯乙烯绝缘料","spec":"WMC-1702B2 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70°C耐油护层级聚氯乙烯塑料","spec":"WMC-6701O 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"70℃绝缘级软聚氯乙烯塑料 J-70","spec":"WMC-1702 橙色0081","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"美标105度PVC绝缘料","spec":"WMC-9052T 黑","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"75℃网线用CMR阻燃级聚氯乙烯护套料","spec":"WMC-2751RW 灰色RAL7038","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"美标 105度PVC绝缘料","spec":"WMC-9052 红0022","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PVC","productName":"105度护层级聚氯乙烯塑料","spec":"WMC-9051 橙0002 RAL2009","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"化学交联","productName":"10kV化学交联绝缘料","spec":"YJ-10 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"屏蔽料","productName":"35kV过氧化物交联型半导电屏蔽料","spec":"PYJJ-35（ WMP-1103）黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 黑色0010","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 红色0010","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 蓝色0010","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 黄色0010","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 绿色0010","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 棕色0010","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125℃自然交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-Z125 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"高阻燃 90℃低烟无卤聚烯烃护套料","spec":"WM-1906B 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"105℃辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3105 蓝色0001","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"高阻燃 90°C低烟无卤聚烯烃护套料","spec":"WM-1906A 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90°C低烟无卤阻燃聚烯烃隔氧层料","spec":"WM-1903B 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125度自交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-Z125PA 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125度自交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-Z125PA 黑0021","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°C辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125C 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90°C低烟无卤阻燃聚烯烃护套料","spec":"WM-1901 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"105℃辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3105 绿色0001","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"高阻燃 90°C低烟无卤聚烯烃绝缘料","spec":"WM-1902-J 红色0001","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"高阻燃 90°C低烟无卤聚烯烃护套料","spec":"WM-1906 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 灰色0010","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"B1级高阻燃 105℃辐照交联低烟无卤聚烯烃电缆料","spec":"WM-7105B 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125℃自交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-Z125D 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"125°辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3125 白色0010","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"耐油型 125℃辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-5125 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"高阻燃 90℃低烟无卤聚烯烃护套料","spec":"WM-1902K 蓝色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"高阻燃 90℃低烟无卤聚烯烃护套料","spec":"WM-1902K 灰色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃电缆料","spec":"WM-2901A 绿色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃电缆料","spec":"WM-2901A 潘通绿色7726C","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"汽车线用125°C辐照交联低烟无卤阻燃聚烯烃绝缘料","spec":"WM-8125D 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902-J  黄色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902-J 浅蓝色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902-J 蓝色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902-J 棕色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902-J 紫色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902-J 橙色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"B1级高阻燃125℃辐照交联低烟无卤聚烯烃电缆料","spec":"WM-7125B 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902-J  黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 蓝色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 棕色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃电缆料","spec":"WM-2901 红色PANTONG4060C","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 黄色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 绿色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90°C低烟无卤阻燃聚烯烃护套料","spec":"WM-1901 灰色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 红色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 紫色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"B1级高阻燃 105℃辐照交联低烟无卤聚烯烃电缆料","spec":"WM-7105B 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90°C低烟无卤阻燃聚烯烃护套料","spec":"WM-1902 灰色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90°C低烟无卤阻燃聚烯烃护套料","spec":"WM-1902 蓝色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"105℃辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3105D  本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902-J  灰色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"105℃辐照交联低烟无卤阻燃聚烯烃电缆料","spec":"WM-3105 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"B1级高阻燃 105℃辐照交联低烟无卤聚烯烃电缆料","spec":"WM-7105B 红色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"B1级高阻燃 105℃辐照交联低烟无卤聚烯烃电缆料","spec":"WM-7105B 白色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"B1级高阻燃 105℃辐照交联低烟无卤聚烯烃电缆料","spec":"WM-7105B 橙色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 橙色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"低烟无卤","productName":"90℃低烟无卤阻燃聚烯烃绝缘料","spec":"WM-1902A-J 灰色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PE/阻燃PE","productName":"90℃无卤阻燃聚乙烯护套料","spec":"WMZPE-9081BL","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PE/阻燃PE","productName":"电线电缆用线性低密度聚乙烯护套料","spec":"WMPE-1112L-XH 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"PE/阻燃PE","productName":"澳标高密度聚乙烯电缆料","spec":"WMPE-1313H 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"色母料","productName":"低烟无卤色母料","spec":"WMS-001 RAL5012浅蓝色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"色母料","productName":"PE色母料","spec":"WMS-001 白色RAL9003","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"弹性体","productName":"环保型热塑性弹性体插头料","spec":"WMX-5080N 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"弹性体","productName":"105℃热塑性弹性体","spec":"WMX-1076C 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"弹性体","productName":"聚醚型TPU","spec":"WMU-1185M6-01 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"弹性体","productName":"环保型无卤阻燃热塑性弹性体电线料","spec":"WMX-3170-A  黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"低烟低卤阻燃母料","spec":"103VW1","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"125度硅烷交联聚乙烯绝缘料","spec":"EZ-125 本色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"二步法硅烷交联架空绝缘料","spec":"201C 黑色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"硅烷交联低烟低卤阻燃料","spec":"103V0 白色","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"二步法硅烷交联聚乙烯绝缘料","spec":"101H1","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"硅烷交联乙丙橡胶","spec":"101ER1","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"二步法XLPE专用抗UV剂","spec":"103UV","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"硅烷交联","productName":"特殊PE抗UV色母(无卤)二步法XLPE专用","spec":"103S","unit":"吨","price":null},{"customer":"零散客户","materialGroup":"TPV","productName":"热塑性弹性体","spec":"WMV-5541 黑色","unit":"吨","price":null}];
+const USERS = [{"name":"朱磊","passcode":"123456","role":"sales","dept":"销售部","managedUnits":["安徽太平洋电缆股份有限公司","浙江华普电缆有限公司","安徽迎客松电缆集团有限公司","安徽长利电缆科技有限公司","浙江华嘉达电缆集团有限公司","安徽诺普电缆有限公司","台州市亚玛得电子股份有限公司","丁少明","无为县众鑫电缆有限公司","安徽华能电缆集团有限公司","泰安华利德贸易有限公司","安徽航天电缆集团有限公司","浙江飞亚电线电缆有限公司","浙江通策电缆有限公司","上海朗达电缆(集团)有限公司","上海藤新电缆有限公司","上海浦东电线电缆（集团）有限公司","安徽国电电缆股份有限公司","易初特种电线电缆（昆山）有限公司","安徽蒙特尔电缆集团有限公司","安徽华宇电缆集团有限公司","湖州织里新飞亚电线电缆厂","南洋电缆集团泰州有限公司","上海电缆厂集团神通电线电缆有限公司","安徽阿克姆缆业有限公司","河北朝阳线缆有限公司","黄山市金川电缆股份有限公司","上海飞航电线电缆有限公司","上海南洋电缆有限公司","零散客户"]},{"name":"董翀","passcode":"123456","role":"sales","dept":"销售部","managedUnits":["标柔特种电缆（上海）有限公司","淮南文峰光电科技股份有限公司","上海埃因电线电缆有限公司","连展（寮国）电子科技有限公司","太仓年益科技电子有限公司","安徽省宁国禹安电工有限公司","上海津纬电气系统有限公司","国柔电缆（上海）有限公司","江苏乔浦电线电缆有限公司","名柔特种电缆（江苏）有限公司","宁国市奥利达电器有限公司","浙江钜典药业有限公司","上海耀闻电线电缆有限公司","上海昭朔特种线缆有限公司","上海江洋线缆有限公司","安徽光生电缆有限公司","安徽光神航天电子技术有限公司","云帆（天津）设备安装有限公司","上海利滨线缆有限公司"]},{"name":"赵大伟","passcode":"123456","role":"sales","dept":"销售部","managedUnits":["深通光电(上海)有限公司"]},{"name":"管理员","passcode":"admin888","role":"admin","dept":"","managedUnits":[]},{"name":"周嵘","passcode":"a7630107","role":"user","dept":"","managedUnits":[]}];
+
+/* ===== 运行时状态 ===== */
+let currentUser = null;
+let priceOverrides = {};   // "客户|产品名称|规格型号|单位" -> 单价字符串
+let activeGroup = "";
+let activeCustomer = "";
+let searchTerm = "";
+
+const $ = (id) => document.getElementById(id);
+const screens = { login: $('loginScreen'), app: $('appScreen') };
+
+/* ===== 工具 ===== */
+function loadPrices(){
+  try { priceOverrides = JSON.parse(localStorage.getItem('pq_prices') || '{}'); }
+  catch(e){ priceOverrides = {}; }
+}
+function savePrices(){
+  localStorage.setItem('pq_prices', JSON.stringify(priceOverrides));
+}
+function keyOf(p){ return [p.customer, p.productName, p.spec, p.unit].join('|'); }
+function getPrice(p){
+  const k = keyOf(p);
+  if (Object.prototype.hasOwnProperty.call(priceOverrides, k)) return priceOverrides[k];
+  return (p.price === null || p.price === undefined) ? null : String(p.price);
+}
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function setLoginError(msg){
+  const err = $('loginErr');
+  err.textContent = msg;
+  err.classList.toggle('visible', !!msg);
+  $('loginName').classList.toggle('has-error', !!msg);
+  $('loginPass').classList.toggle('has-error', !!msg);
+}
+
+/* ===== 界面切换 ===== */
+function showScreen(name){
+  Object.keys(screens).forEach(k => screens[k].classList.remove('active'));
+  screens[name].classList.add('active');
+  updateHeader();
+}
+function updateHeader(){
+  const box = $('headerActions');
+  if (!currentUser){ box.innerHTML = ''; return; }
+  const roleText = currentUser.role === 'admin' ? '管理员' : (currentUser.role === 'sales' ? '业务员' : '普通用户');
+  box.innerHTML = `
+    <span class="header-user">
+      <span class="header-name">${esc(currentUser.name)}</span>
+      <span class="role-tag">${roleText}</span>
+    </span>
+    <div class="user-avatar">${esc(currentUser.name.charAt(0))}</div>
+    <button class="btn header-logout" id="logoutBtn">退出</button>`;
+  $('logoutBtn').onclick = doLogout;
+}
+
+/* ===== 登录 ===== */
+function setupUserList(){
+  const dl = $('userList');
+  dl.innerHTML = USERS.map(u => `<option value="${esc(u.name)}"></option>`).join('');
+}
+function doLogin(){
+  const name = $('loginName').value.trim();
+  const pass = $('loginPass').value;
+  setLoginError('');
+  if (!name || !pass){ setLoginError('请输入姓名和口令'); return; }
+  const u = USERS.find(x => x.name === name);
+  if (!u || u.passcode !== pass){ setLoginError('姓名或口令错误'); return; }
+  currentUser = u;
+  localStorage.setItem('pq_currentUser', name);
+  showApp();
+}
+function doLogout(){
+  currentUser = null;
+  localStorage.removeItem('pq_currentUser');
+  $('loginPass').value = '';
+  $('loginName').value = '';
+  showScreen('login');
+}
+
+/* ===== 应用 ===== */
+function baseData(){
+  if (currentUser.role === 'admin') return PRODUCTS;
+  if (currentUser.role === 'sales') return PRODUCTS.filter(p => currentUser.managedUnits.includes(p.customer));
+  return []; // user 待授权
+}
+function showApp(){
+  showScreen('app');
+  const b = baseData();
+  $('curScope').textContent = currentUser.role === 'admin'
+      ? '全部客户（' + new Set(PRODUCTS.map(p=>p.customer)).size + ' 家）'
+      : (currentUser.role === 'sales' ? '分管 ' + currentUser.managedUnits.length + ' 家客户' : '暂无可查询范围，请联系管理员开通');
+  $('adminTools').classList.toggle('hidden', currentUser.role !== 'admin');
+  buildGroupChips(b);
+  buildCustomerSel(b);
+  render();
+}
+function buildGroupChips(data){
+  const groups = Array.from(new Set(data.map(p => p.materialGroup))).sort();
+  let html = `<div class="chip ${activeGroup===''?'on':''}" data-g="">全部物料组</div>`;
+  html += groups.map(g => `<div class="chip ${activeGroup===g?'on':''}" data-g="${esc(g)}">${esc(g)}</div>`).join('');
+  const box = $('groupChips');
+  box.innerHTML = html;
+  box.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+    activeGroup = c.getAttribute('data-g');
+    buildGroupChips(baseData());
+    render();
+  });
+}
+function buildCustomerSel(data){
+  const sel = $('customerSel');
+  const set = Array.from(new Set(data.map(p => p.customer))).sort();
+  let html = '<option value="">全部客户</option>';
+  html += set.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  sel.innerHTML = html;
+  sel.value = activeCustomer && set.includes(activeCustomer) ? activeCustomer : '';
+  sel.onchange = () => { activeCustomer = sel.value; render(); };
+}
+function filtered(){
+  let data = baseData();
+  if (activeGroup) data = data.filter(p => p.materialGroup === activeGroup);
+  if (activeCustomer) data = data.filter(p => p.customer === activeCustomer);
+  const q = searchTerm.trim().toLowerCase();
+  if (q){
+    data = data.filter(p =>
+      (p.customer+p.productName+p.spec+p.materialGroup).toLowerCase().includes(q));
+  }
+  return data;
+}
+function render(){
+  const data = filtered();
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  $('countText').textContent = '共 ' + data.length + ' 条结果';
+  const box = $('resultBody');
+  if (!currentUser || currentUser.role === 'user'){
+    box.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🔒</div><p class="empty-state__text">您当前暂无可查询的客户范围。<br>请联系管理员为您的账号分配查询权限。</div>';
+    return;
+  }
+  if (data.length === 0){
+    box.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🔍</div><p class="empty-state__text">没有匹配的记录，试试调整搜索词或筛选条件。</div>';
+    return;
+  }
+  let rows = data.map(p => {
+    const pr = getPrice(p);
+    const prHtml = pr === null
+      ? '<span class="price empty">—</span>'
+      : '<span class="price">¥' + esc(pr) + '</span>';
+    const op = isAdmin ? `<div class="op"><button data-k="${esc(keyOf(p))}">编辑单价</button></div>` : '';
+    return `<tr>
+      <td class="cust">${esc(p.customer)}</td>
+      <td><span class="grp">${esc(p.materialGroup)}</span></td>
+      <td>${esc(p.productName)}</td>
+      <td>${esc(p.spec)}</td>
+      <td>${esc(p.unit)}</td>
+      <td>${prHtml}</td>
+      ${isAdmin ? '<td>'+op+'</td>' : ''}
+    </tr>`;
+  }).join('');
+  const headOp = isAdmin ? '<th>操作</th>' : '';
+  box.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>客户</th><th>物料组</th><th>产品名称</th><th>规格型号</th><th>单位</th><th>单价</th>${headOp}</tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+  if (isAdmin){
+    box.querySelectorAll('.op button').forEach(b => b.onclick = () => editPrice(b.getAttribute('data-k')));
+  }
+}
+function editPrice(k){
+  const cur = Object.prototype.hasOwnProperty.call(priceOverrides, k) ? priceOverrides[k]
+            : (() => { const f = PRODUCTS.find(p => keyOf(p) === k); return f && f.price != null ? String(f.price) : ''; })();
+  const input = prompt('录入单价（元/吨），留空表示未填：', cur || '');
+  if (input === null) return; // 取消
+  const v = input.trim();
+  if (v === ''){ delete priceOverrides[k]; }
+  else {
+    const n = Number(v);
+    if (isNaN(n) || n < 0){ toast('请输入合法数字'); return; }
+    priceOverrides[k] = String(n);
+  }
+  savePrices();
+  render();
+  toast('单价已保存（本机）');
+}
+
+/* ===== 管理员 CSV 导出/导入 ===== */
+function exportCSV(){
+  const rows = PRODUCTS.map(p => {
+    const pr = getPrice(p);
+    return [p.customer, p.materialGroup, p.productName, p.spec, p.unit, pr === null ? '' : pr];
+  });
+  const head = ['客户','物料组','产品名称','规格型号','单位','单价'];
+  const lines = [head.join(',')].concat(rows.map(r => r.map(csvCell).join(',')));
+  const csv = '﻿' + lines.join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  a.href = url;
+  a.download = `价格表_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('已导出 '+ rows.length +' 条');
+}
+function csvCell(s){ s = String(s == null ? '' : s); return /[",\r\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+function parseCSV(text){
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i=0;i<text.length;i++){
+    const c = text[i];
+    if (q){
+      if (c === '"'){ if (text[i+1] === '"'){ cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else {
+      if (c === '"') q = true;
+      else if (c === ','){ row.push(cur); cur = ''; }
+      else if (c === '\r'){ /* skip */ }
+      else if (c === '\n'){ row.push(cur); rows.push(row); row = []; cur = ''; }
+      else cur += c;
+    }
+  }
+  if (cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r => r.length && r.some(c => c.trim() !== ''));
+}
+function importCSV(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = parseCSV(String(reader.result || ''));
+    if (rows.length < 2){ toast('文件无数据'); return; }
+    const head = rows[0].map(h => h.trim());
+    const idx = {
+      customer: head.indexOf('客户'), productName: head.indexOf('产品名称'),
+      spec: head.indexOf('规格型号'), unit: head.indexOf('单位'), price: head.indexOf('单价')
+    };
+    if ([idx.customer, idx.productName, idx.spec, idx.unit, idx.price].some(i => i < 0)){
+      toast('CSV 表头需含：客户,产品名称,规格型号,单位,单价'); return;
+    }
+    let cnt = 0;
+    for (let i=1;i<rows.length;i++){
+      const r = rows[i];
+      const k = [r[idx.customer], r[idx.productName], r[idx.spec], r[idx.unit]].join('|');
+      const v = (r[idx.price] || '').trim();
+      if (!PRODUCTS.some(p => keyOf(p) === k)) continue; // 不匹配则跳过
+      if (v === '') delete priceOverrides[k];
+      else { const n = Number(v); if (!isNaN(n) && n >= 0){ priceOverrides[k] = String(n); cnt++; } }
+    }
+    savePrices(); render();
+    toast('已导入 '+ cnt +' 条单价');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+/* ===== 初始化 ===== */
+function init(){
+  loadPrices();
+  setupUserList();
+  const saved = localStorage.getItem('pq_currentUser');
+  if (saved){ $('loginName').value = saved; $('loginPass').focus(); }
+  $('loginForm').addEventListener('submit', e => { e.preventDefault(); doLogin(); });
+  $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  $('loginName').addEventListener('input', () => setLoginError(''));
+  $('loginPass').addEventListener('input', () => setLoginError(''));
+  $('searchInput').addEventListener('input', e => { searchTerm = e.target.value; render(); });
+  $('exportBtn').onclick = exportCSV;
+  $('importBtn').onclick = () => $('importFile').click();
+  $('importFile').onchange = e => { if (e.target.files[0]) importCSV(e.target.files[0]); e.target.value=''; };
+  updateHeader();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
