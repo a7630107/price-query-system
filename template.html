@@ -230,28 +230,6 @@
           <button type="submit" class="btn btn--primary">登 录</button>
         </div>
       </form>
-      <div class="switch-link" id="toRegister">没有账号？<span class="link-text">立即注册</span></div>
-
-      <!-- 注册表单 -->
-      <form id="registerForm" novalidate class="hidden">
-        <div class="form-group">
-          <label class="form-label"><span class="required">*</span>姓名</label>
-          <input type="text" class="form-input" placeholder="请输入姓名" id="regName" autocomplete="off" />
-        </div>
-        <div class="form-group">
-          <label class="form-label"><span class="required">*</span>口令</label>
-          <input type="password" class="form-input" placeholder="请设置口令" id="regPass" />
-        </div>
-        <div class="form-group">
-          <label class="form-label"><span class="required">*</span>确认口令</label>
-          <input type="password" class="form-input" placeholder="请再次输入口令" id="regPass2" />
-          <div class="error-msg" id="regErr"></div>
-        </div>
-        <div class="form-group" style="margin-top:22px; margin-bottom:0;">
-          <button type="submit" class="btn btn--primary">注 册</button>
-        </div>
-      </form>
-      <div class="switch-link" id="toLogin" style="display:none;">已有账号？<span class="link-text">返回登录</span></div>
     </div>
   </section>
 
@@ -425,40 +403,6 @@ function doLogout(){
   $('loginPass').value = '';
   $('loginName').value = '';
   showScreen('login');
-}
-
-/* ===== 注册 ===== */
-function setRegError(msg){ $('regErr').textContent = msg; }
-function showRegister(){
-  $('loginForm').classList.add('hidden');
-  $('toRegister').style.display = 'none';
-  $('registerForm').classList.remove('hidden');
-  $('toLogin').style.display = '';
-  setLoginError(''); setRegError('');
-  $('regName').focus();
-}
-function showLoginForm(){
-  $('loginForm').classList.remove('hidden');
-  $('toRegister').style.display = '';
-  $('registerForm').classList.add('hidden');
-  $('toLogin').style.display = 'none';
-  setLoginError(''); setRegError('');
-}
-function doRegister(){
-  const name = $('regName').value.trim();
-  const pass = $('regPass').value;
-  const pass2 = $('regPass2').value;
-  setRegError('');
-  if (!name || !pass || !pass2){ setRegError('请填写完整'); return; }
-  if (pass !== pass2){ setRegError('两次口令不一致'); return; }
-  if (name === '管理员'){ setRegError('该姓名不可注册'); return; }
-  if (USERS.some(u => u.name === name)){ setRegError('该姓名已存在，请直接登录'); return; }
-  USERS.push({ name, passcode: pass, role: 'user', dept: '', managedUnits: [] });
-  saveUsers();
-  $('regName').value = ''; $('regPass').value = ''; $('regPass2').value = '';
-  showLoginForm();
-  $('loginName').value = name; $('loginPass').focus();
-  toast('注册成功！登录后需管理员分配权限');
 }
 
 /* ===== 应用 ===== */
@@ -877,12 +821,6 @@ function init(){
   $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   $('loginName').addEventListener('input', () => setLoginError(''));
   $('loginPass').addEventListener('input', () => setLoginError(''));
-  $('toRegister').onclick = showRegister;
-  $('toLogin').onclick = showLoginForm;
-  $('registerForm').addEventListener('submit', e => { e.preventDefault(); doRegister(); });
-  $('regName').addEventListener('input', () => setRegError(''));
-  $('regPass').addEventListener('input', () => setRegError(''));
-  $('regPass2').addEventListener('input', () => setRegError(''));
   $('searchInput').addEventListener('input', e => { searchTerm = e.target.value; render(); });
   $('exportBtn').onclick = exportCSV;
   $('importBtn').onclick = () => $('importFile').click();
