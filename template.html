@@ -208,7 +208,7 @@
 
 <div class="app">
   <header class="app-header">
-    <div class="brand">
+    <div class="brand" id="appBrand">
       <div class="brand-icon">前</div>
       <span id="brandTitle" class="brand-title" title="双击编辑标题">前途查询系统</span>
     </div>
@@ -377,6 +377,9 @@ function setLoginError(msg){
 function showScreen(name){
   Object.keys(screens).forEach(k => screens[k].classList.remove('active'));
   screens[name].classList.add('active');
+  // 登录后隐藏左上角图标/品牌，登录页保留
+  const brand = $('appBrand');
+  if (brand) brand.style.display = (name === 'app') ? 'none' : '';
   updateHeader();
 }
 function updateHeader(){
