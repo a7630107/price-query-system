@@ -416,14 +416,15 @@ function doLogout(){
 
 /* ===== 应用 ===== */
 function baseData(){
-  if (currentUser.role === 'admin') return PRODUCTS;
+  // 朱磊在 HTML 应用中硬编码为全量查询权限，不受飞书"分管人员查询权限"限制
+  if (currentUser.role === 'admin' || currentUser.name === '朱磊') return PRODUCTS;
   const units = currentUser.managedUnits || [];
   return PRODUCTS.filter(p => units.includes(p.customer));
 }
 function showApp(){
   showScreen('app');
   const b = baseData();
-  $('curScope').textContent = currentUser.role === 'admin'
+  $('curScope').textContent = (currentUser.role === 'admin' || currentUser.name === '朱磊')
       ? '全部客户（' + new Set(PRODUCTS.map(p=>p.customer)).size + ' 家）'
       : ((currentUser.managedUnits || []).length
           ? '分管 ' + currentUser.managedUnits.length + ' 家客户'
@@ -471,7 +472,7 @@ function render(){
   const data = filtered();
   $('countText').textContent = '共 ' + data.length + ' 条结果';
   const box = $('resultBody');
-  if (!currentUser || (currentUser.role !== 'admin' && (currentUser.managedUnits || []).length === 0)){
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.name !== '朱磊' && (currentUser.managedUnits || []).length === 0)){
     box.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🔒</div><p class="empty-state__text">您当前暂无可查询的客户范围。<br>请联系管理员为您的账号分配查询权限。</div>';
     return;
   }
