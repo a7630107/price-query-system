@@ -83,8 +83,8 @@
  {
   "name": "陈琳",
   "passcode": "123456",
-  "role": "user",
-  "dept": "",
+  "role": "sales",
+  "dept": "销售部",
   "managedUnits": [
    "零散客户"
   ]
