@@ -438,7 +438,9 @@ function showApp(){
       : ((currentUser.managedUnits || []).length
           ? '分管 ' + currentUser.managedUnits.length + ' 家客户'
           : '暂无可查询范围，请联系管理员开通');
-  $('adminTools').classList.toggle('hidden', currentUser.role !== 'admin');
+  // 系统管理工具（飞书数据源/用户管理/同步说明）只对真正的"管理员"账号开放
+  // 普通 admin 角色用户（如朱磊）只有查询所有数据的权限，不开放系统管理入口
+  $('adminTools').classList.toggle('hidden', currentUser.name !== '管理员');
   buildGroupChips(b);
   buildCustomerSel(b);
   render();
