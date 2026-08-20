@@ -92,6 +92,8 @@
   "passcode": "123456",
   "role": "user",
   "dept": "",
-  "managedUnits": []
+  "managedUnits": [
+   "零散客户"
+  ]
  }
 ]
