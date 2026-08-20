@@ -41,6 +41,11 @@
   .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.125rem; letter-spacing:-.02em;}
   .brand-icon{width:32px; height:32px; background:#fff; border-radius:8px; display:flex; align-items:center;
     justify-content:center; color:var(--primary-600); font-size:1rem; font-weight:800;}
+  .brand-title{cursor:text; user-select:none; padding:2px 6px; border-radius:4px; transition:background .15s;}
+  .brand-title:hover{background:rgba(255,255,255,.12);}
+  .brand-title-edit{padding:4px 8px; font-size:.9rem; font-weight:600; border-radius:4px;
+    border:1px solid #fff; background:rgba(255,255,255,.9); color:var(--gray-900); outline:none;
+    width:auto; min-width:120px;}
   .header-actions{display:flex; align-items:center; gap:10px;}
   .header-user{display:flex; flex-direction:column; align-items:flex-end; line-height:1.2;}
   .header-name{font-size:.875rem; font-weight:600;}
@@ -205,7 +210,7 @@
   <header class="app-header">
     <div class="brand">
       <div class="brand-icon">前</div>
-      <span>前途查询系统</span>
+      <span id="brandTitle" class="brand-title" title="双击编辑标题">前途查询系统</span>
     </div>
     <div class="header-actions" id="headerActions"></div>
   </header>
@@ -835,8 +840,63 @@ function init(){
   $('pwdSave').onclick = savePwd;
   ['oldPwd','newPwd','newPwd2'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') savePwd(); }));
   updateHeader();
+  initBrandTitle();
 }
 document.addEventListener('DOMContentLoaded', init);
+
+/* ===== 品牌标题双击编辑 ===== */
+const BRAND_TITLE_KEY = 'pq_brandTitle';
+const DEFAULT_BRAND_TITLE = '前途查询系统';
+function initBrandTitle(){
+  const el = document.getElementById('brandTitle');
+  if (!el) return;
+  const saved = localStorage.getItem(BRAND_TITLE_KEY);
+  if (saved) el.textContent = saved;
+  el.addEventListener('dblclick', () => {
+    const cur = el.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = cur;
+    input.className = 'brand-title-edit';
+    input.maxLength = 24;
+    el.replaceWith(input);
+    input.focus();
+    input.select();
+    let committed = false;
+    const commit = () => {
+      if (committed) return;
+      committed = true;
+      let v = input.value.trim();
+      if (!v) v = DEFAULT_BRAND_TITLE;
+      if (v.length > 24) v = v.slice(0, 24);
+      localStorage.setItem(BRAND_TITLE_KEY, v);
+      const span = document.createElement('span');
+      span.id = 'brandTitle';
+      span.className = 'brand-title';
+      span.title = '双击编辑标题';
+      span.textContent = v;
+      input.replaceWith(span);
+      initBrandTitle();
+    };
+    const cancel = () => {
+      if (committed) return;
+      committed = true;
+      const span = document.createElement('span');
+      span.id = 'brandTitle';
+      span.className = 'brand-title';
+      span.title = '双击编辑标题';
+      span.textContent = cur;
+      input.replaceWith(span);
+      initBrandTitle();
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter'){ e.preventDefault(); commit(); }
+      else if (e.key === 'Escape'){ e.preventDefault(); cancel(); }
+    });
+  });
+}
+
 </script>
 </body>
 </html>
