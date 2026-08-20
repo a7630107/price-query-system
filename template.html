@@ -136,6 +136,57 @@
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
   .hidden{display:none !important;}
 
+  /* 用户管理弹层 */
+  .modal-mask{position:fixed; inset:0; background:rgba(15,23,42,.55); backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center; z-index:100; padding:16px;}
+  .modal-mask.show{display:flex;}
+  .modal-panel{background:#fff; border-radius:var(--radius-lg); width:100%; max-width:560px;
+    max-height:84vh; display:flex; flex-direction:column; box-shadow:var(--shadow-xl); overflow:hidden;}
+  .modal-head{display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; border-bottom:1px solid var(--gray-100);}
+  .modal-head h3{margin:0; font-size:1.05rem; color:var(--gray-900);}
+  .modal-close{background:none; border:none; font-size:1.6rem; line-height:1; color:var(--gray-400);
+    cursor:pointer; padding:0 4px;}
+  .modal-close:hover{color:var(--gray-700);}
+  .modal-body{padding:16px 18px; overflow-y:auto; flex:1;}
+  .user-row{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 14px; border:1px solid var(--gray-100); border-radius:var(--radius-md); margin-bottom:10px; background:var(--gray-50);}
+  .user-row-info{display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0;}
+  .user-row-name{font-weight:600; color:var(--gray-900);}
+  .user-row-count{font-size:.8125rem; color:var(--gray-500);}
+  .user-row-ops{display:flex; gap:8px; flex-shrink:0;}
+  .btn--danger{background:var(--error-50); color:var(--error-600);}
+  .btn--danger:hover{background:var(--error-500); color:#fff;}
+  .btn--ghost{background:transparent; color:var(--primary-600); border:1px solid var(--primary-200); padding:8px 12px; font-size:.8125rem;}
+  .btn--ghost:hover{background:var(--primary-50);}
+  .switch-link{text-align:center; margin-top:16px; font-size:.875rem; color:var(--gray-500);}
+  .link-text{color:var(--primary-600); cursor:pointer; font-weight:600;}
+  .link-text:hover{text-decoration:underline;}
+  .user-row-pw-wrap{display:inline-flex; align-items:center; gap:6px; font-size:.8125rem; color:var(--gray-600);}
+  .user-row-pw{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:600; color:var(--gray-800); letter-spacing:1px;}
+  .pw-toggle{border:1px solid var(--primary-200); background:#fff; color:var(--primary-600); border-radius:6px; padding:2px 7px; font-size:12px; cursor:pointer; line-height:1;}
+  .pw-toggle:hover{background:var(--primary-50);}
+  .perm-tools{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
+  .perm-head{display:flex; align-items:center; gap:8px; margin-bottom:12px;}
+  .perm-user{flex:1; font-weight:600; color:var(--gray-900);}
+  .perm-list{border:1px solid var(--gray-200); border-radius:var(--radius-md); max-height:38vh; overflow-y:auto; padding:6px 4px; margin-bottom:14px;}
+  .perm-item{display:flex; align-items:center; gap:8px; padding:7px 10px; font-size:.875rem; color:var(--gray-700); cursor:pointer; border-radius:6px;}
+  .perm-item:hover{background:var(--gray-50);}
+  .perm-item input{width:16px; height:16px; accent-color:var(--primary-500); flex-shrink:0;}
+  .add-user-form{display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1px dashed var(--gray-200);}
+  .add-user-form input{flex:1; padding:9px 12px; font-size:.875rem; border:1px solid var(--gray-200);
+    border-radius:var(--radius-md); outline:none; font-family:inherit; min-width:0;}
+  .add-user-form input:focus{border-color:var(--primary-400); box-shadow:0 0 0 3px var(--primary-100);}
+  .perm-save-row{display:flex; gap:8px;}
+  .perm-save-row .btn{flex:1;}
+
+  @media (max-width:480px){
+    .user-row{flex-direction:column; align-items:stretch;}
+    .user-row-ops{justify-content:flex-end;}
+    .add-user-form{flex-wrap:wrap;}
+    .add-user-form .btn{flex:1;}
+  }
+
   @media (max-width:480px){
     .card{padding:26px 22px; border-radius:var(--radius-lg);}
     .card-title{font-size:1.375rem;}
@@ -169,8 +220,7 @@
       <form id="loginForm" novalidate>
         <div class="form-group">
           <label class="form-label"><span class="required">*</span>姓名</label>
-          <input type="text" class="form-input" placeholder="请输入姓名" id="loginName" list="userList" autocomplete="off" />
-          <datalist id="userList"></datalist>
+          <input type="text" class="form-input" placeholder="请输入姓名" id="loginName" autocomplete="off" />
         </div>
         <div class="form-group">
           <label class="form-label"><span class="required">*</span>口令</label>
@@ -181,11 +231,35 @@
           <button type="submit" class="btn btn--primary">登 录</button>
         </div>
       </form>
+      <div class="switch-link" id="toRegister">没有账号？<span class="link-text">立即注册</span></div>
+
+      <!-- 注册表单 -->
+      <form id="registerForm" novalidate class="hidden">
+        <div class="form-group">
+          <label class="form-label"><span class="required">*</span>姓名</label>
+          <input type="text" class="form-input" placeholder="请输入姓名" id="regName" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="required">*</span>口令</label>
+          <input type="password" class="form-input" placeholder="请设置口令" id="regPass" />
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="required">*</span>确认口令</label>
+          <input type="password" class="form-input" placeholder="请再次输入口令" id="regPass2" />
+          <div class="error-msg" id="regErr"></div>
+        </div>
+        <div class="form-group" style="margin-top:22px; margin-bottom:0;">
+          <button type="submit" class="btn btn--primary">注 册</button>
+        </div>
+      </form>
+      <div class="switch-link" id="toLogin" style="display:none;">已有账号？<span class="link-text">返回登录</span></div>
+
       <div class="hint-box">
         初始账号（演示）：<br>
-        · 管理员 / admin888（可见全部）<br>
+        · 管理员 / admin888（可见全部，可管理用户权限）<br>
         · 朱磊 / 董翀 / 赵大伟 · 口令 123456（各看分管客户）<br>
-        · 周嵘 · 口令 a7630107（待授权，暂无可查范围）
+        · 周嵘 · 口令 a7630107（普通用户，权限由管理员分配）<br>
+        · 新注册账号默认无权限，需管理员在「用户管理」中分配
       </div>
     </div>
   </section>
@@ -201,6 +275,7 @@
       <div id="adminTools" class="toolbar hidden">
         <button class="btn btn--secondary" id="exportBtn">导出价格 CSV</button>
         <button class="btn btn--secondary" id="importBtn">导入价格 CSV</button>
+        <button class="btn btn--secondary" id="userManageBtn">用户管理</button>
         <input type="file" id="importFile" accept=".csv,text/csv" class="hidden" />
       </div>
 
@@ -232,10 +307,53 @@
 
 <div id="toast"></div>
 
+<!-- 用户管理弹层 -->
+<div class="modal-mask" id="userModal">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3 id="userModalTitle">用户管理</h3>
+      <button class="modal-close" id="userModalClose">×</button>
+    </div>
+    <div class="modal-body" id="userModalBody"></div>
+  </div>
+</div>
+
+<!-- 修改/重置密码弹层 -->
+<div class="modal-mask" id="pwdModal">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3 id="pwdModalTitle">修改密码</h3>
+      <button class="modal-close" id="pwdModalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" id="oldPwdGroup">
+        <label class="form-label"><span class="required">*</span>当前口令</label>
+        <input type="password" class="form-input" id="oldPwd" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="required">*</span>新口令</label>
+        <input type="password" class="form-input" id="newPwd" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="required">*</span>确认新口令</label>
+        <input type="password" class="form-input" id="newPwd2" autocomplete="off" />
+        <div class="error-msg" id="pwdErr"></div>
+      </div>
+      <button class="btn btn--primary" id="pwdSave">保存</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ===== 内置数据（由生成脚本注入，无需联网/服务器）===== */
-const PRODUCTS = __PRODUCTS__;
-const USERS = __USERS__;
+const PRODUCTS = __PRODUCTS__;;
+let USERS = __USERS__;;
+/* 管理员在本机维护过用户后，以本机保存为准（localStorage） */
+try {
+  const savedUsers = JSON.parse(localStorage.getItem('pq_users_v1') || 'null');
+  if (savedUsers && Array.isArray(savedUsers) && savedUsers.length) USERS = savedUsers;
+} catch(e){}
+function saveUsers(){ localStorage.setItem('pq_users_v1', JSON.stringify(USERS)); }
 
 /* ===== 运行时状态 ===== */
 let currentUser = null;
@@ -292,15 +410,13 @@ function updateHeader(){
       <span class="role-tag">${roleText}</span>
     </span>
     <div class="user-avatar">${esc(currentUser.name.charAt(0))}</div>
+    <button class="btn header-logout" id="changePwdBtn">修改密码</button>
     <button class="btn header-logout" id="logoutBtn">退出</button>`;
   $('logoutBtn').onclick = doLogout;
+  $('changePwdBtn').onclick = () => openPwdModal(null);
 }
 
 /* ===== 登录 ===== */
-function setupUserList(){
-  const dl = $('userList');
-  dl.innerHTML = USERS.map(u => `<option value="${esc(u.name)}"></option>`).join('');
-}
 function doLogin(){
   const name = $('loginName').value.trim();
   const pass = $('loginPass').value;
@@ -320,18 +436,54 @@ function doLogout(){
   showScreen('login');
 }
 
+/* ===== 注册 ===== */
+function setRegError(msg){ $('regErr').textContent = msg; }
+function showRegister(){
+  $('loginForm').classList.add('hidden');
+  $('toRegister').style.display = 'none';
+  $('registerForm').classList.remove('hidden');
+  $('toLogin').style.display = '';
+  setLoginError(''); setRegError('');
+  $('regName').focus();
+}
+function showLoginForm(){
+  $('loginForm').classList.remove('hidden');
+  $('toRegister').style.display = '';
+  $('registerForm').classList.add('hidden');
+  $('toLogin').style.display = 'none';
+  setLoginError(''); setRegError('');
+}
+function doRegister(){
+  const name = $('regName').value.trim();
+  const pass = $('regPass').value;
+  const pass2 = $('regPass2').value;
+  setRegError('');
+  if (!name || !pass || !pass2){ setRegError('请填写完整'); return; }
+  if (pass !== pass2){ setRegError('两次口令不一致'); return; }
+  if (name === '管理员'){ setRegError('该姓名不可注册'); return; }
+  if (USERS.some(u => u.name === name)){ setRegError('该姓名已存在，请直接登录'); return; }
+  USERS.push({ name, passcode: pass, role: 'user', dept: '', managedUnits: [] });
+  saveUsers();
+  $('regName').value = ''; $('regPass').value = ''; $('regPass2').value = '';
+  showLoginForm();
+  $('loginName').value = name; $('loginPass').focus();
+  toast('注册成功！登录后需管理员分配权限');
+}
+
 /* ===== 应用 ===== */
 function baseData(){
   if (currentUser.role === 'admin') return PRODUCTS;
-  if (currentUser.role === 'sales') return PRODUCTS.filter(p => currentUser.managedUnits.includes(p.customer));
-  return []; // user 待授权
+  const units = currentUser.managedUnits || [];
+  return PRODUCTS.filter(p => units.includes(p.customer));
 }
 function showApp(){
   showScreen('app');
   const b = baseData();
   $('curScope').textContent = currentUser.role === 'admin'
       ? '全部客户（' + new Set(PRODUCTS.map(p=>p.customer)).size + ' 家）'
-      : (currentUser.role === 'sales' ? '分管 ' + currentUser.managedUnits.length + ' 家客户' : '暂无可查询范围，请联系管理员开通');
+      : ((currentUser.managedUnits || []).length
+          ? '分管 ' + currentUser.managedUnits.length + ' 家客户'
+          : '暂无可查询范围，请联系管理员开通');
   $('adminTools').classList.toggle('hidden', currentUser.role !== 'admin');
   buildGroupChips(b);
   buildCustomerSel(b);
@@ -374,7 +526,7 @@ function render(){
   const isAdmin = currentUser && currentUser.role === 'admin';
   $('countText').textContent = '共 ' + data.length + ' 条结果';
   const box = $('resultBody');
-  if (!currentUser || currentUser.role === 'user'){
+  if (!currentUser || (currentUser.role !== 'admin' && (currentUser.managedUnits || []).length === 0)){
     box.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🔒</div><p class="empty-state__text">您当前暂无可查询的客户范围。<br>请联系管理员为您的账号分配查询权限。</div>';
     return;
   }
@@ -421,6 +573,241 @@ function editPrice(k){
   savePrices();
   render();
   toast('单价已保存（本机）');
+}
+
+/* ===== 用户管理（管理员）===== */
+const ALL_CUSTOMERS = Array.from(new Set(PRODUCTS.map(p => p.customer))).sort();
+let permEditingName = null;
+
+function openUserManager(){
+  permEditingName = null;
+  $('userModalTitle').textContent = '用户管理';
+  $('userModal').classList.add('show');
+  renderUserList();
+}
+function closeUserManager(){ $('userModal').classList.remove('show'); }
+function roleText(u){
+  if (u.role === 'admin') return '管理员';
+  return u.role === 'sales' ? '业务员' : '普通用户';
+}
+function renderUserList(){
+  const box = $('userModalBody');
+  let html = `<div class="perm-tools">
+    <button class="btn btn--ghost btn--sm" id="exportUsersBtn">导出用户 CSV</button>
+    <button class="btn btn--ghost btn--sm" id="importUsersBtn">导入用户 CSV</button>
+    <input type="file" id="importUsersFile" accept=".csv,text/csv" class="hidden" />
+  </div>`;
+  html += USERS.map(u => {
+    const isAdmin = u.role === 'admin';
+    const count = (u.managedUnits || []).length;
+    const pwHtml = `<span class="user-row-pw-wrap">口令：
+        <span class="user-row-pw" data-pw="${esc(u.passcode)}" data-shown="0">••••••</span>
+        <button class="pw-toggle" data-reveal="${esc(u.name)}" title="显示/隐藏口令">👁</button>
+      </span>`;
+    let ops;
+    if (isAdmin){
+      ops = `<div class="user-row-ops">
+          <button class="btn btn--ghost btn--sm" data-reset="${esc(u.name)}">重置密码</button>
+        </div>`;
+    } else {
+      ops = `<div class="user-row-ops">
+          <button class="btn btn--ghost btn--sm" data-reset="${esc(u.name)}">重置密码</button>
+          <button class="btn btn--ghost btn--sm" data-perm="${esc(u.name)}">设置权限</button>
+          <button class="btn btn--danger btn--sm" data-del="${esc(u.name)}">删除</button>
+        </div>`;
+    }
+    return `<div class="user-row">
+      <div class="user-row-info">
+        <span class="user-row-name">${esc(u.name)}</span>
+        <span class="role-tag" style="background:var(--primary-100); color:var(--primary-700);">${roleText(u)}</span>
+        <span class="user-row-count">${isAdmin ? '可见全部客户' : '分管 ' + count + ' 家客户'}</span>
+        ${pwHtml}
+      </div>
+      ${ops}
+    </div>`;
+  }).join('');
+  html += `<div class="add-user-form">
+    <input type="text" id="nuName" placeholder="新用户姓名" autocomplete="off" />
+    <input type="text" id="nuPass" placeholder="口令" autocomplete="off" />
+    <button class="btn btn--primary" id="nuCreate" style="padding:9px 14px; font-size:.8125rem;">新增并设权限</button>
+  </div>`;
+  box.innerHTML = html;
+  box.querySelectorAll('[data-perm]').forEach(b => b.onclick = () => openPermEditor(b.getAttribute('data-perm')));
+  box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteUser(b.getAttribute('data-del')));
+  box.querySelectorAll('[data-reset]').forEach(b => b.onclick = () => openPwdModal(b.getAttribute('data-reset')));
+  box.querySelectorAll('[data-reveal]').forEach(btn => btn.onclick = () => {
+    const row = btn.closest('.user-row');
+    const span = row.querySelector('.user-row-pw');
+    const shown = span.getAttribute('data-shown') === '1';
+    if (shown){
+      span.textContent = '••••••';
+      span.setAttribute('data-shown','0');
+      btn.textContent = '👁';
+    } else {
+      span.textContent = span.getAttribute('data-pw');
+      span.setAttribute('data-shown','1');
+      btn.textContent = '🙈';
+    }
+  });
+  $('nuCreate').onclick = createUser;
+  $('exportUsersBtn').onclick = exportUsers;
+  $('importUsersBtn').onclick = () => $('importUsersFile').click();
+  $('importUsersFile').onchange = e => { if (e.target.files[0]) importUsers(e.target.files[0]); e.target.value=''; };
+}
+function createUser(){
+  const name = $('nuName').value.trim();
+  const pass = $('nuPass').value.trim();
+  if (!name || !pass){ toast('请输入姓名和口令'); return; }
+  if (USERS.some(u => u.name === name)){ toast('该姓名已存在'); return; }
+  USERS.push({ name, passcode: pass, role: 'sales', dept: '', managedUnits: [] });
+  saveUsers();
+  toast('已创建，请设置权限范围');
+  openPermEditor(name);
+}
+function deleteUser(name){
+  const u = USERS.find(x => x.name === name);
+  if (!u) return;
+  if (u.role === 'admin'){ toast('不能删除管理员'); return; }
+  if (!confirm('确定删除用户「' + name + '」？')) return;
+  USERS = USERS.filter(x => x.name !== name);
+  saveUsers();
+  if (currentUser && currentUser.name === name){
+    toast('当前账号已被删除，已退出登录');
+    doLogout();
+    return;
+  }
+  renderUserList();
+  toast('已删除用户');
+}
+function openPermEditor(name){
+  const u = USERS.find(x => x.name === name);
+  if (!u) return;
+  permEditingName = name;
+  $('userModalTitle').textContent = '设置权限 · ' + name;
+  const checked = new Set(u.managedUnits || []);
+  let html = `<div class="perm-head">
+    <button class="btn btn--ghost btn--sm" id="permBack">← 返回</button>
+    <span class="perm-user">${esc(name)} 可见客户</span>
+    <button class="btn btn--ghost btn--sm" id="permAll">全选</button>
+    <button class="btn btn--ghost btn--sm" id="permNone">清空</button>
+  </div>
+  <div class="perm-list">`;
+  html += ALL_CUSTOMERS.map(c =>
+    `<label class="perm-item"><input type="checkbox" value="${esc(c)}" ${checked.has(c) ? 'checked' : ''}>${esc(c)}</label>`
+  ).join('');
+  html += `</div>
+  <div class="perm-save-row">
+    <button class="btn btn--primary" id="permSave">保存权限</button>
+  </div>`;
+  $('userModalBody').innerHTML = html;
+  $('permBack').onclick = () => { permEditingName = null; $('userModalTitle').textContent = '用户管理'; renderUserList(); };
+  $('permAll').onclick = () => $('userModalBody').querySelectorAll('input[type=checkbox]').forEach(c => c.checked = true);
+  $('permNone').onclick = () => $('userModalBody').querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+  $('permSave').onclick = savePerm;
+}
+function savePerm(){
+  const u = USERS.find(x => x.name === permEditingName);
+  if (!u) return;
+  const list = Array.from($('userModalBody').querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
+  u.managedUnits = list;
+  saveUsers();
+  if (currentUser && currentUser.name === u.name){
+    activeGroup = ''; activeCustomer = ''; searchTerm = '';
+    showApp();
+  }
+  toast('权限已保存（本机）');
+  permEditingName = null;
+  $('userModalTitle').textContent = '用户管理';
+  renderUserList();
+}
+
+/* ===== 修改 / 重置密码 ===== */
+let pwdTarget = null; // null = 修改自己；否则为被管理员重置的用户名
+function openPwdModal(target){
+  pwdTarget = target || null;
+  const isSelf = !pwdTarget;
+  $('pwdModalTitle').textContent = isSelf ? '修改密码' : ('重置密码 · ' + pwdTarget);
+  $('oldPwdGroup').style.display = isSelf ? '' : 'none';
+  $('oldPwd').value = ''; $('newPwd').value = ''; $('newPwd2').value = '';
+  setPwdError('');
+  $('pwdModal').classList.add('show');
+  if (isSelf) $('oldPwd').focus(); else $('newPwd').focus();
+}
+function closePwdModal(){ $('pwdModal').classList.remove('show'); }
+function setPwdError(msg){ const e = $('pwdErr'); e.textContent = msg; e.classList.toggle('visible', !!msg); }
+function savePwd(){
+  const newP = $('newPwd').value;
+  const newP2 = $('newPwd2').value;
+  setPwdError('');
+  if (newP === '' || newP2 === ''){ setPwdError('请填写新口令'); return; }
+  if (newP !== newP2){ setPwdError('两次新口令不一致'); return; }
+  if (newP.length < 4){ setPwdError('新口令至少 4 位'); return; }
+  if (pwdTarget){
+    const u = USERS.find(x => x.name === pwdTarget);
+    if (u){ u.passcode = newP; saveUsers(); }
+    closePwdModal();
+    toast('已重置「' + pwdTarget + '」的密码');
+    renderUserList();
+  } else {
+    const oldP = $('oldPwd').value;
+    if (oldP !== currentUser.passcode){ setPwdError('当前口令不正确'); return; }
+    currentUser.passcode = newP;
+    saveUsers();
+    closePwdModal();
+    toast('密码已修改');
+  }
+}
+
+/* ===== 用户 CSV 导出/导入（管理员）===== */
+function exportUsers(){
+  const head = ['姓名','口令','角色','分管客户'];
+  const lines = [head.join(',')].concat(USERS.map(u => [
+    u.name, u.passcode,
+    u.role === 'admin' ? '管理员' : (u.role === 'sales' ? '业务员' : '普通用户'),
+    (u.managedUnits || []).join('|')
+  ].map(csvCell).join(',')));
+  const csv = '\ufeff' + lines.join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '用户表.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('已导出 ' + USERS.length + ' 个用户');
+}
+function importUsers(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = parseCSV(String(reader.result || ''));
+    if (rows.length < 2){ toast('文件无数据'); return; }
+    const head = rows[0].map(h => h.trim());
+    const iName = head.indexOf('姓名'), iPass = head.indexOf('口令'),
+          iRole = head.indexOf('角色'), iUnits = head.indexOf('分管客户');
+    if (iName < 0 || iPass < 0){ toast('CSV 表头需含：姓名,口令,角色,分管客户'); return; }
+    const validUnits = new Set(ALL_CUSTOMERS);
+    let created = 0, updated = 0;
+    for (let i=1;i<rows.length;i++){
+      const r = rows[i];
+      const name = (r[iName] || '').trim();
+      if (!name) continue;
+      const pass = (r[iPass] || '').trim() || '123456';
+      const roleTxt = (r[iRole] || '').trim();
+      const role = roleTxt === '管理员' ? 'admin' : (roleTxt === '业务员' ? 'sales' : 'user');
+      if (role === 'admin'){
+        if (!USERS.some(u => u.name === name)){ USERS.push({name, passcode: pass, role:'admin', dept:'', managedUnits:[]}); created++; }
+        continue;
+      }
+      const units = String(r[iUnits] || '').split('|').map(s => s.trim()).filter(s => validUnits.has(s));
+      const ex = USERS.find(u => u.name === name);
+      if (ex){ ex.passcode = pass; ex.role = role; ex.managedUnits = units; updated++; }
+      else { USERS.push({name, passcode: pass, role, dept:'', managedUnits: units}); created++; }
+    }
+    saveUsers();
+    renderUserList();
+    toast(`导入完成：新增 ${created} 个，更新 ${updated} 个`);
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 /* ===== 管理员 CSV 导出/导入 ===== */
@@ -493,17 +880,29 @@ function importCSV(file){
 /* ===== 初始化 ===== */
 function init(){
   loadPrices();
-  setupUserList();
   const saved = localStorage.getItem('pq_currentUser');
   if (saved){ $('loginName').value = saved; $('loginPass').focus(); }
   $('loginForm').addEventListener('submit', e => { e.preventDefault(); doLogin(); });
   $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   $('loginName').addEventListener('input', () => setLoginError(''));
   $('loginPass').addEventListener('input', () => setLoginError(''));
+  $('toRegister').onclick = showRegister;
+  $('toLogin').onclick = showLoginForm;
+  $('registerForm').addEventListener('submit', e => { e.preventDefault(); doRegister(); });
+  $('regName').addEventListener('input', () => setRegError(''));
+  $('regPass').addEventListener('input', () => setRegError(''));
+  $('regPass2').addEventListener('input', () => setRegError(''));
   $('searchInput').addEventListener('input', e => { searchTerm = e.target.value; render(); });
   $('exportBtn').onclick = exportCSV;
   $('importBtn').onclick = () => $('importFile').click();
   $('importFile').onchange = e => { if (e.target.files[0]) importCSV(e.target.files[0]); e.target.value=''; };
+  $('userManageBtn').onclick = openUserManager;
+  $('userModalClose').onclick = closeUserManager;
+  $('userModal').addEventListener('click', e => { if (e.target === $('userModal')) closeUserManager(); });
+  $('pwdModalClose').onclick = closePwdModal;
+  $('pwdModal').addEventListener('click', e => { if (e.target === $('pwdModal')) closePwdModal(); });
+  $('pwdSave').onclick = savePwd;
+  ['oldPwd','newPwd','newPwd2'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') savePwd(); }));
   updateHeader();
 }
 document.addEventListener('DOMContentLoaded', init);
