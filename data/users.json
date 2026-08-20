@@ -86,5 +86,12 @@
   "role": "user",
   "dept": "",
   "managedUnits": []
+ },
+ {
+  "name": "陈琳",
+  "passcode": "123456",
+  "role": "user",
+  "dept": "",
+  "managedUnits": []
  }
 ]
