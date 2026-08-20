@@ -664,6 +664,18 @@ function openPwdModal(target){
 }
 function closePwdModal(){ $('pwdModal').classList.remove('show'); }
 function setPwdError(msg){ const e = $('pwdErr'); e.textContent = msg; e.classList.toggle('visible', !!msg); }
+// 部署到 Vercel 后，把下面这个 URL 换成实际地址（不要带末尾斜杠）
+const PWD_API_URL = 'https://price-query-system.vercel.app/api/update-password';
+async function syncPwdToFeishu(name, oldP, newP){
+  try {
+    const r = await fetch(PWD_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, oldPassword: oldP, newPassword: newP })
+    });
+    return await r.json();
+  } catch (e) { return { ok: false, error: '网络异常: ' + (e && e.message ? e.message : e) }; }
+}
 function savePwd(){
   const newP = $('newPwd').value;
   const newP2 = $('newPwd2').value;
@@ -672,18 +684,25 @@ function savePwd(){
   if (newP !== newP2){ setPwdError('两次新口令不一致'); return; }
   if (newP.length < 4){ setPwdError('新口令至少 4 位'); return; }
   if (pwdTarget){
+    // 管理员重置他人密码（仅本机，暂不同步飞书——飞书表需手动改）
     const u = USERS.find(x => x.name === pwdTarget);
     if (u){ u.passcode = newP; saveUsers(); }
     closePwdModal();
-    toast('已重置「' + pwdTarget + '」的密码');
+    toast('已重置「' + pwdTarget + '」的密码（仅本机）');
     renderUserList();
   } else {
+    // 用户修改自己的密码
     const oldP = $('oldPwd').value;
     if (oldP !== currentUser.passcode){ setPwdError('当前口令不正确'); return; }
     currentUser.passcode = newP;
     saveUsers();
     closePwdModal();
     toast('密码已修改');
+    // 异步同步到飞书（不阻塞 UI）
+    syncPwdToFeishu(currentUser.name, oldP, newP).then(r => {
+      if (r && r.ok) toast('已同步到飞书');
+      else toast('飞书同步未成功: ' + (r && r.error ? r.error : '未知错误'));
+    });
   }
 }
 
