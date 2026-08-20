@@ -336,7 +336,6 @@ function saveUsers(){ localStorage.setItem('pq_users_v1', JSON.stringify(USERS))
 
 /* ===== 运行时状态 ===== */
 let currentUser = null;
-let priceOverrides = {};   // "客户|产品名称|规格型号|单位" -> 单价字符串
 let activeGroup = "";
 let activeCustomer = "";
 let searchTerm = "";
@@ -345,17 +344,8 @@ const $ = (id) => document.getElementById(id);
 const screens = { login: $('loginScreen'), app: $('appScreen') };
 
 /* ===== 工具 ===== */
-function loadPrices(){
-  try { priceOverrides = JSON.parse(localStorage.getItem('pq_prices') || '{}'); }
-  catch(e){ priceOverrides = {}; }
-}
-function savePrices(){
-  localStorage.setItem('pq_prices', JSON.stringify(priceOverrides));
-}
-function keyOf(p){ return [p.customer, p.productName, p.spec, p.unit].join('|'); }
+// 价格直接从飞书多维表同步的产品数据读取，不支持本地修改
 function getPrice(p){
-  const k = keyOf(p);
-  if (Object.prototype.hasOwnProperty.call(priceOverrides, k)) return priceOverrides[k];
   return (p.price === null || p.price === undefined) ? null : String(p.price);
 }
 function toast(msg){
@@ -479,7 +469,6 @@ function filtered(){
 }
 function render(){
   const data = filtered();
-  const isAdmin = currentUser && currentUser.role === 'admin';
   $('countText').textContent = '共 ' + data.length + ' 条结果';
   const box = $('resultBody');
   if (!currentUser || (currentUser.role !== 'admin' && (currentUser.managedUnits || []).length === 0)){
@@ -501,7 +490,6 @@ function render(){
     const prHtml = pr === null
       ? '<span class="price empty">—</span>'
       : '<span class="price">¥' + esc(pr) + '</span>';
-    const op = isAdmin ? `<div class="op"><button data-k="${esc(keyOf(p))}">编辑单价</button></div>` : '';
     return `<tr>
       <td class="cust">${esc(p.customer)}</td>
       <td><span class="grp">${esc(p.materialGroup)}</span></td>
@@ -509,34 +497,12 @@ function render(){
       <td>${esc(p.spec)}</td>
       <td>${esc(p.unit)}</td>
       <td>${prHtml}</td>
-      ${isAdmin ? '<td>'+op+'</td>' : ''}
     </tr>`;
   }).join('');
-  const headOp = isAdmin ? '<th>操作</th>' : '';
   box.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>客户</th><th>物料组</th><th>产品名称</th><th>规格型号</th><th>单位</th><th>单价</th>${headOp}</tr></thead>
+    <thead><tr><th>客户</th><th>物料组</th><th>产品名称</th><th>规格型号</th><th>单位</th><th>单价</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
-  if (isAdmin){
-    box.querySelectorAll('.op button').forEach(b => b.onclick = () => editPrice(b.getAttribute('data-k')));
-  }
 }
-function editPrice(k){
-  const cur = Object.prototype.hasOwnProperty.call(priceOverrides, k) ? priceOverrides[k]
-            : (() => { const f = PRODUCTS.find(p => keyOf(p) === k); return f && f.price != null ? String(f.price) : ''; })();
-  const input = prompt('录入单价（元/吨），留空表示未填：', cur || '');
-  if (input === null) return; // 取消
-  const v = input.trim();
-  if (v === ''){ delete priceOverrides[k]; }
-  else {
-    const n = Number(v);
-    if (isNaN(n) || n < 0){ toast('请输入合法数字'); return; }
-    priceOverrides[k] = String(n);
-  }
-  savePrices();
-  render();
-  toast('单价已保存（本机）');
-}
-
 /* ===== 用户管理（管理员）===== */
 const ALL_CUSTOMERS = Array.from(new Set(PRODUCTS.map(p => p.customer))).sort();
 let permEditingName = null;
@@ -772,26 +738,7 @@ function importUsers(file){
   reader.readAsText(file, 'UTF-8');
 }
 
-/* ===== 管理员 CSV 导出/导入 ===== */
-function exportCSV(){
-  const rows = PRODUCTS.map(p => {
-    const pr = getPrice(p);
-    return [p.customer, p.materialGroup, p.productName, p.spec, p.unit, pr === null ? '' : pr];
-  });
-  const head = ['客户','物料组','产品名称','规格型号','单位','单价'];
-  const lines = [head.join(',')].concat(rows.map(r => r.map(csvCell).join(',')));
-  const csv = '﻿' + lines.join('\r\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const d = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  a.href = url;
-  a.download = `价格表_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast('已导出 '+ rows.length +' 条');
-}
+/* ===== CSV 工具（用户管理导入用）===== */
 function csvCell(s){ s = String(s == null ? '' : s); return /[",\r\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
 function parseCSV(text){
   const rows = []; let row = [], cur = '', q = false;
@@ -811,37 +758,8 @@ function parseCSV(text){
   if (cur !== '' || row.length){ row.push(cur); rows.push(row); }
   return rows.filter(r => r.length && r.some(c => c.trim() !== ''));
 }
-function importCSV(file){
-  const reader = new FileReader();
-  reader.onload = () => {
-    const rows = parseCSV(String(reader.result || ''));
-    if (rows.length < 2){ toast('文件无数据'); return; }
-    const head = rows[0].map(h => h.trim());
-    const idx = {
-      customer: head.indexOf('客户'), productName: head.indexOf('产品名称'),
-      spec: head.indexOf('规格型号'), unit: head.indexOf('单位'), price: head.indexOf('单价')
-    };
-    if ([idx.customer, idx.productName, idx.spec, idx.unit, idx.price].some(i => i < 0)){
-      toast('CSV 表头需含：客户,产品名称,规格型号,单位,单价'); return;
-    }
-    let cnt = 0;
-    for (let i=1;i<rows.length;i++){
-      const r = rows[i];
-      const k = [r[idx.customer], r[idx.productName], r[idx.spec], r[idx.unit]].join('|');
-      const v = (r[idx.price] || '').trim();
-      if (!PRODUCTS.some(p => keyOf(p) === k)) continue; // 不匹配则跳过
-      if (v === '') delete priceOverrides[k];
-      else { const n = Number(v); if (!isNaN(n) && n >= 0){ priceOverrides[k] = String(n); cnt++; } }
-    }
-    savePrices(); render();
-    toast('已导入 '+ cnt +' 条单价');
-  };
-  reader.readAsText(file, 'UTF-8');
-}
-
 /* ===== 初始化 ===== */
 function init(){
-  loadPrices();
   const saved = localStorage.getItem('pq_currentUser');
   if (saved){ $('loginName').value = saved; $('loginPass').focus(); }
   $('loginForm').addEventListener('submit', e => { e.preventDefault(); doLogin(); });
