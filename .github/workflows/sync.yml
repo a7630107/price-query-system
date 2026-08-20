@@ -1,0 +1,45 @@
+name: Sync from Feishu
+
+on:
+  schedule:
+    - cron: '0 * * * *'          # 每小时整点自动同步一次
+  workflow_dispatch:            # 允许在 Actions 页面手动 "Run workflow" 立即同步
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/**'  # 仅改脚本/工作流时触发，避免同步提交再次触发造成循环
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Sync data from Feishu
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_APP_TOKEN: ${{ vars.FEISHU_APP_TOKEN }}
+          FEISHU_TABLE_PRODUCTS: ${{ vars.FEISHU_TABLE_PRODUCTS }}
+          FEISHU_TABLE_PERMISSIONS: ${{ vars.FEISHU_TABLE_PERMISSIONS }}
+          FEISHU_TABLE_USERS: ${{ vars.FEISHU_TABLE_USERS }}
+        run: node scripts/sync-from-feishu.js
+      - name: Build index.html
+        run: node build.js
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/products.json data/users.json index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: sync from Feishu $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
