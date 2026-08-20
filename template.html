@@ -486,6 +486,12 @@ function render(){
     box.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🔒</div><p class="empty-state__text">您当前暂无可查询的客户范围。<br>请联系管理员为您的账号分配查询权限。</div>';
     return;
   }
+  // 搜索框为空时不显示结果，提示用户输入关键词
+  if (!searchTerm.trim()){
+    $('countText').textContent = '';
+    box.innerHTML = '<div class="empty-state"><div class="empty-state__icon">📝</div><p class="empty-state__text">请在上方搜索框输入关键词进行查询</p></div>';
+    return;
+  }
   if (data.length === 0){
     box.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🔍</div><p class="empty-state__text">没有匹配的记录，试试调整搜索词或筛选条件。</div>';
     return;
