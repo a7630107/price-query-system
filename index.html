@@ -407,11 +407,17 @@ function doLogin(){
   const u = USERS.find(x => x.name === name);
   if (!u || u.passcode !== pass){ setLoginError('姓名或口令错误'); return; }
   currentUser = u;
+  // 重置筛选状态，防止跨登录残留导致结果区空白
+  activeGroup = ''; activeCustomer = ''; searchTerm = '';
+  const si = $('searchInput'); if (si) si.value = '';
   localStorage.setItem('pq_currentUser', name);
   showApp();
 }
 function doLogout(){
   currentUser = null;
+  // 重置筛选状态，防止下次登录残留
+  activeGroup = ''; activeCustomer = ''; searchTerm = '';
+  const si = $('searchInput'); if (si) si.value = '';
   localStorage.removeItem('pq_currentUser');
   $('loginPass').value = '';
   $('loginName').value = '';
