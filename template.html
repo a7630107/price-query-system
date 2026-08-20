@@ -297,32 +297,6 @@
   </div>
 </div>
 
-<!-- 修改/重置密码弹层 -->
-<div class="modal-mask" id="pwdModal">
-  <div class="modal-panel">
-    <div class="modal-head">
-      <h3 id="pwdModalTitle">修改密码</h3>
-      <button class="modal-close" id="pwdModalClose">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group" id="oldPwdGroup">
-        <label class="form-label"><span class="required">*</span>当前口令</label>
-        <input type="password" class="form-input" id="oldPwd" autocomplete="off" />
-      </div>
-      <div class="form-group">
-        <label class="form-label"><span class="required">*</span>新口令</label>
-        <input type="password" class="form-input" id="newPwd" autocomplete="off" />
-      </div>
-      <div class="form-group">
-        <label class="form-label"><span class="required">*</span>确认新口令</label>
-        <input type="password" class="form-input" id="newPwd2" autocomplete="off" />
-        <div class="error-msg" id="pwdErr"></div>
-      </div>
-      <button class="btn btn--primary" id="pwdSave">保存</button>
-    </div>
-  </div>
-</div>
-
 <script>
 /* ===== 内置数据（由生成脚本注入，无需联网/服务器）===== */
 const PRODUCTS = __PRODUCTS__;;
@@ -382,10 +356,8 @@ function updateHeader(){
       <span class="role-tag">${roleText}</span>
     </span>
     <div class="user-avatar">${esc(currentUser.name.charAt(0))}</div>
-    <button class="btn header-logout" id="changePwdBtn">修改密码</button>
     <button class="btn header-logout" id="logoutBtn">退出</button>`;
   $('logoutBtn').onclick = doLogout;
-  $('changePwdBtn').onclick = () => openPwdModal(null);
 }
 
 /* ===== 登录 ===== */
@@ -536,11 +508,9 @@ function renderUserList(){
     let ops;
     if (isAdmin){
       ops = `<div class="user-row-ops">
-          <button class="btn btn--ghost btn--sm" data-reset="${esc(u.name)}">重置密码</button>
         </div>`;
     } else {
       ops = `<div class="user-row-ops">
-          <button class="btn btn--ghost btn--sm" data-reset="${esc(u.name)}">重置密码</button>
           <button class="btn btn--ghost btn--sm" data-perm="${esc(u.name)}">设置权限</button>
           <button class="btn btn--danger btn--sm" data-del="${esc(u.name)}">删除</button>
         </div>`;
@@ -563,7 +533,6 @@ function renderUserList(){
   box.innerHTML = html;
   box.querySelectorAll('[data-perm]').forEach(b => b.onclick = () => openPermEditor(b.getAttribute('data-perm')));
   box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteUser(b.getAttribute('data-del')));
-  box.querySelectorAll('[data-reset]').forEach(b => b.onclick = () => openPwdModal(b.getAttribute('data-reset')));
   box.querySelectorAll('[data-reveal]').forEach(btn => btn.onclick = () => {
     const row = btn.closest('.user-row');
     const span = row.querySelector('.user-row-pw');
@@ -650,62 +619,6 @@ function savePerm(){
   renderUserList();
 }
 
-/* ===== 修改 / 重置密码 ===== */
-let pwdTarget = null; // null = 修改自己；否则为被管理员重置的用户名
-function openPwdModal(target){
-  pwdTarget = target || null;
-  const isSelf = !pwdTarget;
-  $('pwdModalTitle').textContent = isSelf ? '修改密码' : ('重置密码 · ' + pwdTarget);
-  $('oldPwdGroup').style.display = isSelf ? '' : 'none';
-  $('oldPwd').value = ''; $('newPwd').value = ''; $('newPwd2').value = '';
-  setPwdError('');
-  $('pwdModal').classList.add('show');
-  if (isSelf) $('oldPwd').focus(); else $('newPwd').focus();
-}
-function closePwdModal(){ $('pwdModal').classList.remove('show'); }
-function setPwdError(msg){ const e = $('pwdErr'); e.textContent = msg; e.classList.toggle('visible', !!msg); }
-// 部署到 Vercel 后，把下面这个 URL 换成实际地址（不要带末尾斜杠）
-const PWD_API_URL = 'https://price-query-system.vercel.app/api/update-password';
-async function syncPwdToFeishu(name, oldP, newP){
-  try {
-    const r = await fetch(PWD_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, oldPassword: oldP, newPassword: newP })
-    });
-    return await r.json();
-  } catch (e) { return { ok: false, error: '网络异常: ' + (e && e.message ? e.message : e) }; }
-}
-function savePwd(){
-  const newP = $('newPwd').value;
-  const newP2 = $('newPwd2').value;
-  setPwdError('');
-  if (newP === '' || newP2 === ''){ setPwdError('请填写新口令'); return; }
-  if (newP !== newP2){ setPwdError('两次新口令不一致'); return; }
-  if (newP.length < 4){ setPwdError('新口令至少 4 位'); return; }
-  if (pwdTarget){
-    // 管理员重置他人密码（仅本机，暂不同步飞书——飞书表需手动改）
-    const u = USERS.find(x => x.name === pwdTarget);
-    if (u){ u.passcode = newP; saveUsers(); }
-    closePwdModal();
-    toast('已重置「' + pwdTarget + '」的密码（仅本机）');
-    renderUserList();
-  } else {
-    // 用户修改自己的密码
-    const oldP = $('oldPwd').value;
-    if (oldP !== currentUser.passcode){ setPwdError('当前口令不正确'); return; }
-    currentUser.passcode = newP;
-    saveUsers();
-    closePwdModal();
-    toast('密码已修改');
-    // 异步同步到飞书（不阻塞 UI）
-    syncPwdToFeishu(currentUser.name, oldP, newP).then(r => {
-      if (r && r.ok) toast('已同步到飞书');
-      else toast('飞书同步未成功: ' + (r && r.error ? r.error : '未知错误'));
-    });
-  }
-}
-
 /* ===== 用户 CSV 导出/导入（管理员）===== */
 function exportUsers(){
   const head = ['姓名','口令','角色','分管客户'];
@@ -790,10 +703,6 @@ function init(){
   $('userManageBtn').onclick = openUserManager;
   $('userModalClose').onclick = closeUserManager;
   $('userModal').addEventListener('click', e => { if (e.target === $('userModal')) closeUserManager(); });
-  $('pwdModalClose').onclick = closePwdModal;
-  $('pwdModal').addEventListener('click', e => { if (e.target === $('pwdModal')) closePwdModal(); });
-  $('pwdSave').onclick = savePwd;
-  ['oldPwd','newPwd','newPwd2'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') savePwd(); }));
   updateHeader();
   initBrandTitle();
 }
