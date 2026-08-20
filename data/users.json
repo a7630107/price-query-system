@@ -74,7 +74,7 @@
   ]
  },
  {
-  "name": "管理员",
+  "name": "admin",
   "passcode": "admin888",
   "role": "admin",
   "dept": "",
@@ -86,7 +86,8 @@
   "role": "sales",
   "dept": "销售部",
   "managedUnits": [
-   "零散客户"
+   "零散客户",
+   "上海南洋电缆有限公司"
   ]
  }
 ]
