@@ -726,5 +726,21 @@
   "spec": "WMPE-4311H 本色",
   "unit": "千克",
   "price": 14.1077
+ },
+ {
+  "customer": "散户",
+  "materialGroup": "111",
+  "productName": "111",
+  "spec": "111",
+  "unit": "11",
+  "price": 111
+ },
+ {
+  "customer": "散户2",
+  "materialGroup": "222",
+  "productName": "222",
+  "spec": "2222",
+  "unit": "22",
+  "price": 222
  }
 ]
